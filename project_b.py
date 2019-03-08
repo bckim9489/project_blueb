@@ -3,14 +3,37 @@ import sys
 import bluetooth._bluetooth as bluez
 import Queue as queue
 import threading
+import MySQLdb
+import time
+import os
 
+#-------------------System Command Line--------------------
+os.system('sudo echo -e "power on \nscan on \nquit" | bluetoothctl')
+time.sleep(3)
 #-------------------Global Data Structure & Variable--------
 uuid_queue = queue.Queue()
-uuid_list = ['11111111111111111111111111111111',\
-					 	 'e2c56db5dffb48d2b060d0f5a71096e0']
+uuid_list = []
 output_flag = False
+used_list = []
+del_time = 10 #time of init
+non_list = []
+#-------------------Database connect-----------------------
+try:
+	db=MySQLdb.connect(host="mariadb.c4lfqmkfhrw8.ap-northeast-2.rds.amazonaws.com",\
+									 	 user="admin",passwd="1q2w3e4r",db="mariadb")
+	print "Connected DataBase"
 
-#-------------------Socket----------------------------------
+except:
+	print "Error Database Connect"
+	sys.exit(1)
+
+cur = db.cursor()
+cur.execute("SELECT * FROM uuid_list")
+for row in cur.fetchall():
+	uuid_list.append(row[0])
+db.close()
+
+#-------------------Socket(or Network)----------------------
 dev_id = 0
 try:
 	sock = bluez.hci_open_dev(dev_id)
@@ -23,7 +46,14 @@ except:
 blescan.hci_le_set_scan_parameters(sock)
 blescan.hci_enable_le_scan(sock)
 
-
+'''
+test_payload = blescan.parse_events(sock, 1)
+if test_payload is None:
+	os.system('echo -e "" | sudo python /home/pi/iBeacon-Scanner-/project_b.py')
+	sys.exit(1)
+else:
+	print test_payload
+'''
 #------------------Function---------------------------------
 def distance_func(rssi_value, txPower):
 	if rssi_value == 0:
@@ -40,9 +70,10 @@ def distance_func(rssi_value, txPower):
 		return (accuracy*100)
 
 def compare_func(uuid_list, target_uuid):
-	for comp_uuid in uuid_list:
-		if target_uuid == comp_uuid:
-			return True
+	if target_uuid in uuid_list:
+		return True
+	else:
+		return False
 
 def parser_func():
 	payload_nonfix = blescan.parse_events(sock, 1)
@@ -51,7 +82,7 @@ def parser_func():
 		return payload
 
 def rssi_check_func(distance):
-	if distance < 0.01 and distance > -1.0: #distance_func Error value is -1.0
+	if distance > -1.0: #distance_func Error value is -1.0
 		return True
 	else:
 		return False
@@ -61,6 +92,12 @@ def rssi_origin_check_func(rssi):
 		return True
 	else:
 		return False
+
+def used_check_func(used_list, target_uuid):
+	if target_uuid in used_list:
+ 		return False
+	else:
+		return True
 
 #===========## Thread_func ##=================
 
@@ -88,25 +125,41 @@ def dequeue_func():
 		txPower = float(payload[-2])
 		rssi = float(payload[-1])
 		distance = distance_func(rssi, txPower)
-		#print "UUID: {0} distance: {1} RSSI: {2}".format(uuid, distance, rssi)
+		print "UUID: {0} distance: {1} RSSI: {2}".format(uuid, distance, rssi)
 		
-		#if rssi_check_func(distance) == True:
-		if rssi_origin_check_func(rssi) == True:
+		if rssi_check_func(distance) == True:
+		#if rssi_origin_check_func(rssi) == True:
 			if compare_func(uuid_list, uuid) == True:
-				print "\nOk\nThat's Right\nGet in, Bro!\n"
-				print "UUID: {0} distance: {1} RSSI: {2}".format(uuid, distance, rssi)
-		
+				if used_check_func(used_list, uuid) == True:
+					print "\nOk\nThat's Right\nGet in, Bro!\n"
+					used_list.append(uuid)
+					print "UUID: {0} distance: {1} RSSI: {2}".format(uuid, distance, rssi)
+
+def init_list():
+	while True:
+		time.sleep(del_time)
+		del used_list[:]
+		print "init uuid_list\n\n"
+
 #----------------Main_func---------------------------------------
-
 if __name__=='__main__':
-
+	test_payload = parser_func()
+	if test_payload is None:
+		os.system('shutdown -r now')
+	'''
+	if test_payload == None:
+		os.system('echo -e "" | sudo python /home/pi/iBeacon-Scanner-/project_b.py')
+		sys.exit(1)
+	else:
+		print test_payload
+	'''
+	#Thread - init used_list
+	t_init_list = threading.Thread(target=init_list)
 	#Thread - UUID inqueue
 	t_inqueue = threading.Thread(target=inqueue_func)
 	#Thread - dequeue & compare
 	t_deq_comp = threading.Thread(target=dequeue_func)
 	#Thread - compared result Output
-	#t_res_output = threading.Thread(target=output_func)
-	
+	t_init_list.start()
 	t_inqueue.start()
 	t_deq_comp.start()
-	#t_res_output.start()
