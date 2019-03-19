@@ -20,7 +20,7 @@ non_list = []
 #-------------------Database connect-----------------------
 try:
 	db=MySQLdb.connect(host="mariadb.c4lfqmkfhrw8.ap-northeast-2.rds.amazonaws.com",\
-									 	 user="admin",passwd="1q2w3e4r",db="mariadb")
+			    user="admin",passwd="1q2w3e4r",db="mariadb")
 	print "Connected DataBase"
 
 except:
