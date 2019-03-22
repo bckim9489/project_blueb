@@ -6,7 +6,6 @@ import threading
 import MySQLdb
 import time
 import os
-
 #-------------------System Command Line--------------------
 os.system('sudo echo -e "power on \nscan on \nquit" | bluetoothctl')
 time.sleep(3)
@@ -143,9 +142,6 @@ def init_list():
 
 #----------------Main_func---------------------------------------
 if __name__=='__main__':
-	test_payload = parser_func()
-	if test_payload is None:
-		os.system('shutdown -r now')
 	'''
 	if test_payload == None:
 		os.system('echo -e "" | sudo python /home/pi/iBeacon-Scanner-/project_b.py')
