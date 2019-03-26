@@ -8,8 +8,10 @@ import requests
 
 #-----------Global Data Sturucture & Variable------------
 uuid_list = []
+url = 'http://13.125.170.17/testbus.php'
+
 #-----------Database connect-----------------------------
-query_ = "SELECT * FROM uuid_list"
+query_ = "SELECT * FROM test_bus"
 
 
 '''
@@ -27,7 +29,18 @@ for row in cur.fetchall():
 db.close()
 '''
 #----------Function-------------------------------------
+def requests_server_func():
+    res = requests.post(url)
+    res.status_code
+    new_txt = res.text.replace("[", "")
+    new_txt = new_txt.replace("]", "")
+    new_txt = new_txt.replace('"', "")
 
+    arr_ = new_txt.split(',')
+
+    return arr_
+
+def 
 #----------Main_func------------------------------------
 
 if __name__=='__main__':
