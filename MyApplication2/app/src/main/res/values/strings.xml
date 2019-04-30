@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">My Application2</string>
+    <string name="textview">NULL</string>
+    <string name="id">Enter the data</string>
+    <string name="ip">Enter the IP</string>
+    <string name="uid">Enter the data</string>
+    <string name="button">Connecting</string>
+</resources>
